@@ -39,7 +39,7 @@ def main() -> int:
 
     sender = Sender()
     file_watcher = FileWatcher()
-    usb_watcher = UsbWatcher()
+    usb_watcher = UsbWatcher(file_watcher)
     email_watcher = EmailWatcher()
     deployer = DecoyDeployer()
 

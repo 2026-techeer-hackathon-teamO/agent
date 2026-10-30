@@ -10,11 +10,11 @@ from event_bus import bus
 class Sender(threading.Thread):
     def __init__(self) -> None:
         super().__init__(daemon=True)
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self._client = httpx.Client(base_url=settings.backend_url, timeout=5.0)
 
     def run(self) -> None:
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             try:
                 event = bus.get(timeout=0.5)
             except Exception:
@@ -39,4 +39,4 @@ class Sender(threading.Thread):
             return False
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
