@@ -26,3 +26,7 @@ obj/
 # Go (후보)
 /dist/
 *.exe
+
+# 디코이 배치 상태 (개발 환경 기본 위치)
+decoy_state.json
+decoy_state.json.tmp

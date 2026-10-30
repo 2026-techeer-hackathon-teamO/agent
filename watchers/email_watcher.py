@@ -15,7 +15,7 @@ import threading
 class EmailWatcher(threading.Thread):
     def __init__(self) -> None:
         super().__init__(daemon=True)
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
 
     def run(self) -> None:
         if sys.platform != "win32":
@@ -30,7 +30,9 @@ class EmailWatcher(threading.Thread):
         print("[email_watcher] (스텁) Outlook 메일 감시 자리 — ItemSend 후킹 TODO")
         # TODO: Outlook Application 의 ItemSend 이벤트를 받아 첨부를 classifier 로 검사,
         #       기밀이면 event_bus 로 email_send(blocked=True) 발행 + 발송 취소.
-        self._stop.wait()
+        #       첨부 파일마다 이벤트 1건, 각각 file_hash=classifier.hash_file(첨부 임시경로)[0]
+        #       포함 (디코이 해시 매칭은 backend 가 수행).
+        self._stop_event.wait()
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()

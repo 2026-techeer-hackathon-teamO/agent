@@ -13,7 +13,9 @@ agent/
 ├── classifier.py        # 기밀 여부 분류 (경로/파일명/확장자 규칙)
 ├── sender.py            # 이벤트를 backend /api/logs 로 전송
 ├── event_bus.py         # 워처 → 전송기 사이의 큐
-├── decoy_deployer.py    # backend 디코이를 받아 PC에 배치
+├── decoy_deployer.py    # backend 디코이를 받아 사용자 Downloads 에 배치
+├── decoy_state.py       # 배치 기록 / 자기 배치 이벤트 억제 / 알려진 디코이 해시
+├── user_session.py      # 로그인 사용자·Downloads 폴더 해석 (SYSTEM 서비스 대응)
 └── watchers/
     ├── file_watcher.py  # watchdog 기반 파일 생성/수정/복사 감시 (USB 복사 포함)
     ├── usb_watcher.py   # 이동식 저장소 연결 감시 (Windows WMI, 그 외 비활성)
@@ -26,7 +28,8 @@ agent/
 | USB 복사 탐지 | `file_watcher.py`(이동식 드라이브 판별) + `usb_watcher.py`(연결 감지) | ✅ / Windows 전용 |
 | 메일 유출 감시 | `watchers/email_watcher.py` | 🚧 스텁 (Outlook COM/SMTP 후크 TODO) |
 | 로그 서버 전송 | `sender.py` → backend `POST /api/logs` | ✅ |
-| 디코이 배치 | `decoy_deployer.py` → backend `GET /api/decoys` | 🚧 스텁 (파일 배치까지, 비콘 임베드 TODO) |
+| 디코이 배치 | `decoy_deployer.py` → backend `GET /api/agent/decoys` | ✅ 원본 바이트 + sha256 검증 후 Downloads 배치 |
+| 디코이 유출 탐지 | `file_watcher.py` 가 알려진 디코이 해시를 `file_hash` 로 보고 → backend 가 HIGH 알림 | ✅ |
 
 > Windows 네이티브 감시(USB 연결/메일 COM)는 `pywin32`·`WMI`가 있어야 하며, 그 외 OS에서는 자동 비활성(로그만 남김)됩니다. 파일 감시와 전송은 어느 OS에서든 동작합니다.
 
@@ -36,17 +39,34 @@ agent/
 cd agent
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env            # BACKEND_URL, WATCH_PATHS 등 설정
+cp .env.example .env            # BACKEND_URL, AGENT_API_KEY, WATCH_PATHS 등 설정
 python main.py                  # Ctrl+C 로 종료
 
 # 연결 점검용: 합성 이벤트 1건을 backend로 보내고 종료
 python main.py --selftest
 ```
 
+## 테스트
+
+```bash
+pip install pytest
+pytest -q
+```
+
 ## 연동
 
-- 로그 전송: `backend` 의 `POST /api/logs`
-- 디코이 수신/배치: `backend` 의 `GET /api/decoys`
+- 로그 전송: `backend` 의 `POST /api/logs` (구체적 파일 이벤트에는 `file_hash` = 소문자 hex SHA-256)
+- 디코이 수신/배치: `backend` 의 `GET /api/agent/decoys`, `GET /api/agent/decoys/{id}/file` (헤더 `X-Agent-Key`)
+
+### 디코이 배치 동작
+
+- 받은 바이트를 그대로 저장 (sha256 + `X-Decoy-SHA256` 검증, 불일치 시 폐기). Mark-of-the-Web 미부착
+- 같은 이름의 파일이 있으면 건너뜀 (사용자 파일 보호), 파일명의 경로 구분자 제거
+- 배치 기록(`DECOY_STATE_FILE`)에 있으면 재배치하지 않음 — 사용자가 삭제한 디코이도 다시 만들지 않음
+- 수정/접근/생성 시각을 2~7일 전으로 설정
+- 배치 직후 10초간 해당 경로 이벤트를 file_watcher 가 무시 (배치 자체가 알림이 되지 않도록)
+- 로그인 사용자가 없어 Downloads 를 찾지 못하면 다음 주기에 재시도
+- 한 PC에 여러 사용자가 있으면 현재 활성 콘솔 사용자에게만 배치
 
 ## 관련 레포
 

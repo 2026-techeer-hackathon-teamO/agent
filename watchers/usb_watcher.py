@@ -1,19 +1,22 @@
 """이동식 저장소(USB) 연결 감지. Windows WMI 기반.
 
 Windows가 아니거나 WMI 미설치 시 자동 비활성(아무 것도 하지 않음).
-실제 복사 차단/탐지는 file_watcher가 이동식 드라이브 경로를 감시하며 처리.
+실제 복사 탐지는 file_watcher가 이동식 드라이브 경로를 감시하며 처리하므로,
+연결이 감지되면 해당 드라이브를 file_watcher 감시 대상에 추가한다.
 """
 import sys
 import threading
 
 from config import settings
 from event_bus import publish
+from user_session import interactive_user
 
 
 class UsbWatcher(threading.Thread):
-    def __init__(self) -> None:
+    def __init__(self, file_watcher=None) -> None:
         super().__init__(daemon=True)
-        self._stop = threading.Event()
+        self._file_watcher = file_watcher
+        self._stop_event = threading.Event()
         self._available = sys.platform == "win32"
 
     def run(self) -> None:
@@ -32,7 +35,7 @@ class UsbWatcher(threading.Thread):
         # 이동식 디스크(DriveType=2) 연결 이벤트 감시
         watcher = c.Win32_VolumeChangeEvent.watch_for(EventType=2)
         print("[usb_watcher] USB 연결 감시 시작")
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             try:
                 evt = watcher(timeout_ms=1000)
             except wmi.x_wmi_timed_out:
@@ -40,9 +43,12 @@ class UsbWatcher(threading.Thread):
             except Exception as exc:  # noqa: BLE001
                 print(f"[usb_watcher] 오류: {exc}")
                 continue
+            drive = getattr(evt, "DriveName", None)
+            if drive and self._file_watcher is not None:
+                self._file_watcher.add_path(f"{drive.rstrip(chr(92))}\\")
             publish({
                 "host": settings.host_name,
-                "user": "",
+                "user": interactive_user(),
                 "event_type": "usb_copy",
                 "channel": f"usb:{getattr(evt, 'DriveName', '?')}",
                 "classification": None,
@@ -51,4 +57,4 @@ class UsbWatcher(threading.Thread):
             })
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
