@@ -1,0 +1,28 @@
+# 언어 결정 후 보강. 공통 항목만 우선 포함.
+.env
+.env.*
+!.env.example
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Python (후보)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# .NET (후보)
+bin/
+obj/
+
+# Go (후보)
+/dist/
+*.exe
