@@ -10,7 +10,6 @@ import time
 from config import settings
 from decoy_deployer import DecoyDeployer
 from sender import Sender
-from usb_policy import configure_usb_policy
 from watchers.email_watcher import EmailWatcher
 from watchers.file_watcher import FileWatcher
 from watchers.usb_watcher import UsbWatcher
@@ -45,8 +44,6 @@ def main() -> int:
     deployer = DecoyDeployer()
 
     sender.start()
-    if not configure_usb_policy() and settings.usb_block_writes:
-        print("[agent] WARNING: USB policy not configured; run as administrator on Windows")
     file_watcher.start()
     usb_watcher.start()
     email_watcher.start()
