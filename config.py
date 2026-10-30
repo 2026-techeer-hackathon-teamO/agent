@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     decoy_state_file: str = ""
     # 이보다 큰 파일은 해시를 건너뛰고 detail.hash_skipped="too_large"
     hash_max_bytes: int = 500 * 1024 * 1024
+    # 기밀/디코이 첨부가 있는 메일 발송 차단 (false 면 탐지·보고만)
+    email_block: bool = True
     # 같은 경로의 연속 이벤트(on_modified 다발)를 묶는 시간(초)
     event_debounce_seconds: float = 2.0
 

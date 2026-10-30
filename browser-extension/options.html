@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <title>DLP Gmail 첨부 보호 설정</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; max-width: 520px; margin: 32px auto; padding: 0 16px; }
+    label { display: block; margin-top: 14px; font-weight: 600; }
+    input[type=text], input[type=password] { width: 100%; padding: 6px 8px; box-sizing: border-box; }
+    small { color: #666; font-weight: 400; }
+    button { margin-top: 18px; padding: 6px 14px; }
+    #status { margin-top: 12px; white-space: pre-line; color: #333; }
+  </style>
+</head>
+<body>
+  <h1>Gmail 첨부 보호</h1>
+
+  <label><input type="checkbox" id="enabled"> 차단 사용</label>
+
+  <label for="backendUrl">보안 서버 주소</label>
+  <input type="text" id="backendUrl" placeholder="http://localhost:8000">
+  <small>localhost 외 주소는 manifest.json 의 host_permissions 에도 추가해야 합니다.</small>
+
+  <label for="host">PC 식별자 <small>(로그의 host)</small></label>
+  <input type="text" id="host" placeholder="예: HR-PC-01">
+
+  <label for="keywords">기밀 키워드 <small>(쉼표 구분, 에이전트 CONFIDENTIAL_KEYWORDS 와 맞추기)</small></label>
+  <input type="text" id="keywords">
+
+  <label for="agentKey">Agent Key <small>(backend 가 X-Agent-Key 를 요구할 때만)</small></label>
+  <input type="password" id="agentKey" autocomplete="off">
+
+  <button id="save">저장</button>
+  <div id="status"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>

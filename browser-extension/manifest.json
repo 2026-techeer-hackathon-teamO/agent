@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "DLP Gmail 첨부 보호",
+  "version": "0.1.0",
+  "description": "Gmail 웹에서 기밀 파일 첨부를 차단하고 보안 서버로 보고합니다 (회사 보안 정책).",
+  "permissions": ["storage", "alarms"],
+  "host_permissions": [
+    "https://mail.google.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://mail.google.com/*"],
+      "js": ["policy.js", "content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
+}

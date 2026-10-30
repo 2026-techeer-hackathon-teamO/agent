@@ -19,14 +19,15 @@ agent/
 └── watchers/
     ├── file_watcher.py  # watchdog 기반 파일 생성/수정/복사 감시 (USB 복사 포함)
     ├── usb_watcher.py   # 이동식 저장소 연결 감시 (Windows WMI, 그 외 비활성)
-    └── email_watcher.py # 메일 첨부 유출 감시 (Outlook/SMTP 스텁)
+    ├── email_watcher.py # Outlook 발신 메일 기밀 첨부 차단 (ItemSend 후킹)
+    └── email_policy.py  # 첨부 검사 정책 (기밀 분류 + 디코이 해시)
 ```
 
 | 기능 | 구현 지점 | 상태 |
 |---|---|---|
 | 기밀 파일 접근/복사 감시 | `watchers/file_watcher.py` | ✅ watchdog (크로스플랫폼) |
 | USB 복사 탐지 | `file_watcher.py`(이동식 드라이브 판별) + `usb_watcher.py`(연결 감지) | ✅ / Windows 전용 |
-| 메일 유출 감시 | `watchers/email_watcher.py` | 🚧 스텁 (Outlook COM/SMTP 후크 TODO) |
+| 메일 기밀 첨부 차단 | `watchers/email_watcher.py` + `email_policy.py` | ✅ Outlook 데스크톱 (Windows 전용) |
 | 로그 서버 전송 | `sender.py` → backend `POST /api/logs` | ✅ |
 | 디코이 배치 | `decoy_deployer.py` → backend `GET /api/agent/decoys` | ✅ 원본 바이트 + sha256 검증 후 Downloads 배치 |
 | 디코이 유출 탐지 | `file_watcher.py` 가 알려진 디코이 해시를 `file_hash` 로 보고 → backend 가 HIGH 알림 | ✅ |
@@ -57,6 +58,16 @@ pytest -q
 
 - 로그 전송: `backend` 의 `POST /api/logs` (구체적 파일 이벤트에는 `file_hash` = 소문자 hex SHA-256)
 - 디코이 수신/배치: `backend` 의 `GET /api/agent/decoys`, `GET /api/agent/decoys/{id}/file` (헤더 `X-Agent-Key`)
+
+### 메일 차단 동작
+
+- Outlook `ItemSend` 에서 첨부를 임시 저장해 SHA-256 계산 → 파일명/확장자가 기밀이거나 디코이 해시면 발송 취소
+- 첨부마다 `email_send` 이벤트 1건(`blocked=true`, `file_hash`, `detail.to/subject`) → backend 가 판단 후 담당자 알림
+- 발신자에게 차단 안내 창 표시. `EMAIL_BLOCK=false` 면 차단 없이 보고만
+- 검사 중 오류가 나면 발송 허용(fail-open)하고 로그만 남김
+- Outlook 이 실행 중일 때만 붙고(새로 띄우지 않음), 종료/재시작 시 다시 연결
+- agent 는 **로그인 사용자 세션**에서 실행해야 함 (SYSTEM 서비스는 사용자 Outlook 에 접근 불가)
+- 웹메일(Gmail 웹 등)·Outlook 외 클라이언트는 대상 아님
 
 ### 디코이 배치 동작
 
