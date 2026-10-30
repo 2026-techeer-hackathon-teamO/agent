@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     email_block: bool = True
     # 같은 경로의 연속 이벤트(on_modified 다발)를 묶는 시간(초)
     event_debounce_seconds: float = 2.0
+    usb_block_writes: bool = True
 
     @property
     def host_name(self) -> str:
