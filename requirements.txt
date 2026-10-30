@@ -1,0 +1,9 @@
+# Python 3.11~3.14 호환
+httpx>=0.28
+pydantic>=2.11
+pydantic-settings>=2.7
+watchdog>=5.0
+
+# Windows 전용 네이티브 감시 (USB 연결 / Outlook 메일). 그 외 OS에선 설치/사용 안 함.
+pywin32>=306; sys_platform == "win32"
+WMI>=1.5; sys_platform == "win32"
